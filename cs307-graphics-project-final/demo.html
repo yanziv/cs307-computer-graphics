@@ -1,0 +1,545 @@
+<!doctype html>
+<html>
+<head>
+    <title>Return to Mars</title>
+    <style>canvas { width: 100%; height: 100% }</style>
+</head>
+<body>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+        "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+        </script>
+        <script src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js">
+        "https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls.js"
+        </script>
+        <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+        "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+        </script>
+        <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+        "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui.min.js"
+        </script>
+        <script src="https://cs.wellesley.edu/~cs307/threejs/demos-s21-r95/LatheEtc/ConvexGeometry.js"></script>
+        
+            <script src="demo.html"></script>
+                        
+</body>
+<ul>
+    <h1>Return to Mars</h1>
+    <h2>CS 307 Computer Graphics Final Project</h2>
+    <li>Created by Veronica Lin '24 (Spring 2022)
+    <li>Special thanks to Prof. Ellen Hildreth for her help with the project!
+       
+</ul>
+<script>
+
+
+var scene = new THREE.Scene(); 
+var renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true
+});
+renderer.shadowMap.enabled = true;
+
+TW.mainInit(renderer,scene);
+
+var sceneParams = {
+    //spaceX flag params 
+    flagWidth: 10,
+    flagHeight: 7,
+    flagWidthSegments: 15,
+    flagHeightSegments: 9,
+
+    //flag pole params
+    poleRadiusTop: 0.35,
+    poleRadiusBottom: 0.35,
+    poleHeight: 18,
+    poleRadialSegments: 32,
+
+    //terrain params
+    horTexture: 100,
+    verTexture: 100,
+    dispScale: 45
+}
+
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+var loader = new THREE.TextureLoader(); 
+scene.background = loader.load("mars-resized.png");
+
+function createAnimatedFlag() {
+    // create a SpaceX flag 
+    var geometry = new THREE.PlaneGeometry(sceneParams.flagWidth, sceneParams.flagHeight, sceneParams.flagWidthSegments, sceneParams.flagHeightSegments);
+    var material = new THREE.MeshBasicMaterial({ 
+        color: 0xffffff,
+        map: loader.load("spacex.png"),
+        side: THREE.DoubleSide,
+        //wireframe: true
+    });
+    var flag = new THREE.Mesh(geometry, material);
+
+    flag.rotation.set(-0.1,0,0);
+
+    // create a clock so that the flag moves with elapsed time 
+    var clock = new THREE.Clock(); 
+    function flagAnimate() {
+        var t = clock.getElapsedTime(); 
+
+        // move all the vertices on the flag and change the amplitude of the wave
+        flag.geometry.vertices.map(v =>  {
+            var waveX1 = 0.5 * Math.sin(v.x * 2 + t * 10);
+            var waveX2 = 0.25 * Math.sin(v.x * 10 + t  * 5);
+            var waveY1 = 0.5 * Math.sin(v.y * 15 + t * 2);
+            var multiplier = (v.x + sceneParams.flagWidth/2) / sceneParams.flagWidth;
+            v.z = (waveX1 + waveX2 + waveY1) * multiplier; 
+        })
+        flag.geometry.verticesNeedUpdate = true; 
+        requestAnimationFrame(flagAnimate);
+        TW.render();
+        
+    }
+    flagAnimate();
+
+    // create a flag pole 
+    var poleGeom = new THREE.CylinderGeometry(sceneParams.poleRadiusTop,sceneParams.poleRadiusBottom,sceneParams.poleHeight,sceneParams.poleRadialSegments,true);
+    var poleMaterial = new THREE.MeshPhongMaterial({color: new THREE.Color("silver"),
+                                                        specular: new THREE.Color("gray"),
+                                                        shininess: 10,
+                                                        flatShading: THREE.FlatShading,
+                                                        side: THREE.DoubleSide});
+    var poleMesh = new THREE.Mesh(poleGeom, poleMaterial);
+    poleMesh.position.x = -5;
+    poleMesh.position.y = -4;
+    flag.position.set(0,1,0);
+    flag.castShadow = true;
+    var entireFlag = new THREE.Object3D(); 
+    entireFlag.add(poleMesh);
+    entireFlag.add(flag);
+    entireFlag.position.set(11,0,-5);
+    entireFlag.castShadow = true;
+    scene.add(entireFlag);
+}
+
+
+// Add rocks to scene 
+function makePoints () {
+    pts = [];
+    for (var i = 0; i < 100; i++) {
+        x = 5*Math.random()-5;
+        y = 5*Math.random()-5;
+        z = 5*Math.random()-5;
+        pts.push(new THREE.Vector3(x,y,z));
+    }
+    return pts;
+}
+
+
+// create a function that generates a random integer value between min and max (inclusive)
+function randomIntFromInterval(min, max) { 
+  return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+// create a geometry that is the convex hull surrounding the 3D points
+function addRocks() {
+    var points = makePoints();
+
+    for (var i = 0; i < 12; i ++) { // create 12 rocks with random locations in the scene
+        rockGeom = new THREE.ConvexGeometry(points);
+        var rockColors = [0x505050, 0x4e342e, 0x4e2e25]; 
+        var randomColor = rockColors[Math.floor(Math.random() * rockColors.length)];
+        var rockMat = new THREE.MeshPhongMaterial({color: randomColor,flatShading: true});
+        var rockMesh  = new THREE.Mesh(rockGeom, rockMat);
+        var randomX = randomIntFromInterval(-60,60);
+        var randomY = randomIntFromInterval(-20,0);
+        var randomZ = randomIntFromInterval(-70,-10);
+        rockMesh.rotation.x = Math.PI/randomIntFromInterval(1,10);
+        rockMesh.position.set(randomX,randomY,randomZ);
+        rockMesh.castShadow = true;
+        rockMesh.receiveShadow = true;
+        scene.add(rockMesh);
+    }
+}
+
+// Mars terrain 
+function createGround () {
+    var groundGeom = new THREE.PlaneGeometry(800,800,100,100);
+
+    let disMap = new THREE.TextureLoader()
+        .load("heightMap2.png");
+
+        disMap.wrapS = disMap.wrapT = THREE.RepeatWrapping;
+        disMap.repeat.set(sceneParams.horTexture,sceneParams.verTexture);
+    
+    var groundMat = new THREE.MeshPhongMaterial({
+        color: 0xD4F1F4, //baby blus as a base color
+        //wireframe: true,
+        map:loader.load("mars-surface.png"),
+        displacementMap: disMap,
+        displacementScale: sceneParams.dispScale
+    });
+
+    groundMesh = new THREE.Mesh(groundGeom, groundMat);
+    groundMesh.rotation.x = -Math.PI/2; //make the plane horizontal
+    //groundMesh.position.y = -30;
+    groundMesh.position.set(30,-20,-50);
+    groundMesh.receiveShadow = true; 
+    scene.add(groundMesh);
+    
+}
+
+function makeAstro1 () {
+
+  var astronaut = new THREE.Object3D();
+  var whiteMaterial = new THREE.MeshPhongMaterial({color: 0xffffff,flatShading: true});
+  
+  // torso
+  var torsoGeom = new THREE.CylinderGeometry(5,6.5,9.5,4);
+  var torsoMesh  = new THREE.Mesh(torsoGeom, whiteMaterial);
+  torsoMesh.rotation.y = Math.PI/4;
+  astronaut.add(torsoMesh);
+
+  // helmet 
+  var helmetGeom = new THREE.CylinderGeometry(3,3,6,32);
+  var helmetMesh = new THREE.Mesh(helmetGeom,whiteMaterial);
+  helmetMesh.position.set(0,6.5,0);
+  astronaut.add(helmetMesh);
+  var topHelmetGeom = new THREE.SphereGeometry(3.6,32,32,0,2*Math.PI,0,Math.PI/3);
+  var topHelmetMesh = new THREE.Mesh(topHelmetGeom,whiteMaterial);
+  topHelmetMesh.position.set(0,7.5,0);
+  astronaut.add(topHelmetMesh);
+
+  // logo
+  var logoGeom = new THREE.PlaneGeometry(6,6);
+  var logoMat = new THREE.MeshPhongMaterial({color: 0xffffff,
+                                             map: loader.load("nasa.png")});
+  var logoMesh = new THREE.Mesh(logoGeom,logoMat);
+  logoMesh.rotation.x = -Math.PI/20;
+  logoMesh.position.set(0,1,4.1);
+  astronaut.add(logoMesh);
+
+  // face
+  var faceGeom = new THREE.CylinderGeometry(3,3,3,32,8,true,1.9*Math.PI,0.4*Math.PI);
+  var faceMat = new THREE.MeshPhongMaterial({color: 0xffffff,
+                                             map: loader.load("lego-face.png")
+                                            });
+  var faceMesh = new THREE.Mesh(faceGeom,faceMat);
+  faceMesh.position.set(0,7.5,0);
+  astronaut.add(faceMesh);
+
+  // box geometry beneath torso
+  var boxGeom = new THREE.BoxGeometry(8,4,7);
+  var boxMat = new THREE.MeshPhongMaterial({color: 0x0047AB,flatShading: true});
+  var boxMesh = new THREE.Mesh(boxGeom, boxMat); 
+  boxMesh.position.set(0,-5,0);
+  astronaut.add(boxMesh); 
+
+  // legs 
+  var leg1Geom = new THREE.BoxGeometry(3,6,7);
+  var leg1Mesh = new THREE.Mesh(leg1Geom,whiteMaterial);
+  leg1Mesh.position.set(-2,-10,0);
+
+  var leg2Geom = new THREE.BoxGeometry(3,6,7);
+  var leg2Mesh = new THREE.Mesh(leg2Geom,whiteMaterial);
+  leg2Mesh.position.set(2,-10,0);
+
+  astronaut.add(leg1Mesh);
+  astronaut.add(leg2Mesh);
+
+  // arms
+  var arm = new THREE.Object3D();
+
+  var shoulder1Geom = new THREE.SphereGeometry(2,32,32,Math.PI/2); //Math.PI*1.25
+  var shoulder1Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+  shoulder1Mesh.position.set(4.4,2.5,0.5);
+  shoulder1Mesh.rotation.z = Math.PI/4;
+  arm.add(shoulder1Mesh);
+
+  var shoulder2Geom = new THREE.SphereGeometry(1.8,32,32,Math.PI/2); //Math.PI*1.25
+  var shoulder2Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+  shoulder2Mesh.position.set(5,1.5,0.5);
+  shoulder2Mesh.rotation.z = Math.PI/4;
+  arm.add(shoulder2Mesh);
+
+  var shoulder3Geom = new THREE.SphereGeometry(1.8,32,32,Math.PI/2); //Math.PI*1.25
+  var shoulder3Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+  shoulder3Mesh.position.set(6,0,0.5);
+  shoulder3Mesh.rotation.z = Math.PI/4;
+  arm.add(shoulder3Mesh);
+
+  var shoulder4Geom = new THREE.SphereGeometry(1.8,32,32,Math.PI/2); //Math.PI*1.25
+  var shoulder4Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+  shoulder4Mesh.position.set(6,-2,0.5);
+  shoulder4Mesh.rotation.z = Math.PI/4;
+  arm.add(shoulder4Mesh);
+
+  let arm2 = arm.clone();
+  arm2.rotation.y = Math.PI; 
+  arm2.position.set(0,0,0.5); 
+
+  astronaut.add(arm);
+  astronaut.add(arm2);
+
+  astronaut.position.set(-5,0,-25);
+  astronaut.castShadow = true; 
+  scene.add(astronaut);
+}
+
+function makeAstro2 () {
+
+var astronaut = new THREE.Object3D();
+var whiteMaterial = new THREE.MeshPhongMaterial({color: 0x000000,flatShading: true});
+
+// torso
+var torsoGeom = new THREE.CylinderGeometry(5,6.5,9.5,4);
+var torsoMesh  = new THREE.Mesh(torsoGeom, whiteMaterial);
+torsoMesh.rotation.y = Math.PI/4;
+astronaut.add(torsoMesh);
+
+// helmet 
+var helmetGeom = new THREE.CylinderGeometry(3,3,6,32);
+var helmetMesh = new THREE.Mesh(helmetGeom,whiteMaterial);
+helmetMesh.position.set(0,6.5,0);
+astronaut.add(helmetMesh);
+var topHelmetGeom = new THREE.SphereGeometry(3.6,32,32,0,2*Math.PI,0,Math.PI/3);
+var topHelmetMesh = new THREE.Mesh(topHelmetGeom,whiteMaterial);
+topHelmetMesh.position.set(0,7.5,0);
+astronaut.add(topHelmetMesh);
+
+// logo
+var logoGeom = new THREE.PlaneGeometry(6,6);
+var logoMat = new THREE.MeshPhongMaterial({color: 0xffffff,
+                                           map: loader.load("nasa-black.png")});
+var logoMesh = new THREE.Mesh(logoGeom,logoMat);
+logoMesh.rotation.x = -Math.PI/20;
+logoMesh.position.set(0,1,4.1);
+astronaut.add(logoMesh);
+
+// face
+var faceGeom = new THREE.CylinderGeometry(3,3,3,32,8,true,1.8*Math.PI,0.4*Math.PI);
+var faceMat = new THREE.MeshPhongMaterial({color: 0xffffff,
+                                           map: loader.load("lego-face2.png")
+                                          });
+var faceMesh = new THREE.Mesh(faceGeom,faceMat);
+faceMesh.position.set(0,7.5,0);
+astronaut.add(faceMesh);
+
+// box geometry beneath torso
+var boxGeom = new THREE.BoxGeometry(8,4,7);
+var boxMat = new THREE.MeshPhongMaterial({color: 0x343434,flatShading: true});
+var boxMesh = new THREE.Mesh(boxGeom, boxMat); 
+boxMesh.position.set(0,-5,0);
+astronaut.add(boxMesh); 
+
+// legs 
+var leg1Geom = new THREE.BoxGeometry(3,6,7);
+var leg1Mesh = new THREE.Mesh(leg1Geom,whiteMaterial);
+leg1Mesh.position.set(-2,-10,0);
+
+var leg2Geom = new THREE.BoxGeometry(3,6,7);
+var leg2Mesh = new THREE.Mesh(leg2Geom,whiteMaterial);
+leg2Mesh.position.set(2,-10,0);
+
+astronaut.add(leg1Mesh);
+astronaut.add(leg2Mesh);
+
+// arms
+var arm = new THREE.Object3D();
+
+var shoulder1Geom = new THREE.SphereGeometry(2,32,32,Math.PI/2); //Math.PI*1.25
+var shoulder1Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+shoulder1Mesh.position.set(4.4,2.5,0.5);
+shoulder1Mesh.rotation.z = Math.PI/4;
+arm.add(shoulder1Mesh);
+
+var shoulder2Geom = new THREE.SphereGeometry(1.8,32,32,Math.PI/2); //Math.PI*1.25
+var shoulder2Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+shoulder2Mesh.position.set(5,1.5,0.5);
+shoulder2Mesh.rotation.z = Math.PI/4;
+arm.add(shoulder2Mesh);
+
+var shoulder3Geom = new THREE.SphereGeometry(1.8,32,32,Math.PI/2); //Math.PI*1.25
+var shoulder3Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+shoulder3Mesh.position.set(6,0,0.5);
+shoulder3Mesh.rotation.z = Math.PI/4;
+arm.add(shoulder3Mesh);
+
+var shoulder4Geom = new THREE.SphereGeometry(1.8,32,32,Math.PI/2); //Math.PI*1.25
+var shoulder4Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+shoulder4Mesh.position.set(6,-2,0.5);
+shoulder4Mesh.rotation.z = Math.PI/4;
+arm.add(shoulder4Mesh);
+
+let arm2 = arm.clone();
+arm2.rotation.y = Math.PI; 
+arm2.position.set(0,0,0.5); 
+
+astronaut.add(arm);
+astronaut.add(arm2);
+
+astronaut.position.set(-35,0,-30);
+astronaut.rotation.y = Math.PI/5;
+astronaut.castShadow = true; 
+scene.add(astronaut);
+}
+
+function makeAstro3 () {
+  var astronaut3 = new THREE.Object3D();
+  var whiteMaterial = new THREE.MeshPhongMaterial({color: 0xffffff,flatShading: true});
+  
+  // torso
+  var torsoGeom = new THREE.CylinderGeometry(5,6.5,9.5,4);
+  var torsoMesh  = new THREE.Mesh(torsoGeom, whiteMaterial);
+  torsoMesh.rotation.y = Math.PI/4;
+  astronaut3.add(torsoMesh);
+
+  // helmet 
+  var helmetGeom = new THREE.CylinderGeometry(3,3,6,32);
+  var helmetMesh = new THREE.Mesh(helmetGeom,whiteMaterial);
+  helmetMesh.position.set(0,6.5,0);
+  astronaut3.add(helmetMesh);
+  var topHelmetGeom = new THREE.SphereGeometry(3.6,32,32,0,2*Math.PI,0,Math.PI/3);
+  var topHelmetMesh = new THREE.Mesh(topHelmetGeom,whiteMaterial);
+  topHelmetMesh.position.set(0,7.5,0);
+  astronaut3.add(topHelmetMesh);
+
+  // logo
+  var logoGeom = new THREE.PlaneGeometry(6,6);
+  var logoMat = new THREE.MeshPhongMaterial({color: 0xffffff,
+                                             map: loader.load("nasa.png")});
+  var logoMesh = new THREE.Mesh(logoGeom,logoMat);
+  logoMesh.rotation.x = -Math.PI/20;
+  logoMesh.position.set(0,1,4.1);
+  astronaut3.add(logoMesh);
+
+  // face
+  var faceGeom = new THREE.CylinderGeometry(3,3,3,32,8,true,1.7*Math.PI,0.4*Math.PI);
+  var faceMat = new THREE.MeshPhongMaterial({color: 0xffffff,
+                                             map: loader.load("female-lego.png")
+                                            });
+  var faceMesh = new THREE.Mesh(faceGeom,faceMat);
+  faceMesh.position.set(0,7.5,0);
+  astronaut3.add(faceMesh);
+
+  // box geometry beneath torso
+  var boxGeom = new THREE.BoxGeometry(8,4,7);
+  var boxMat = new THREE.MeshPhongMaterial({color: 0x0047AB,flatShading: true});
+  var boxMesh = new THREE.Mesh(boxGeom, boxMat); 
+  boxMesh.position.set(0,-5,0);
+  astronaut3.add(boxMesh); 
+
+  // legs 
+  var leg1Geom = new THREE.BoxGeometry(3,6,7);
+  var leg1Mesh = new THREE.Mesh(leg1Geom,whiteMaterial);
+  leg1Mesh.position.set(-2,-10,0);
+
+  var leg2Geom = new THREE.BoxGeometry(3,6,7);
+  var leg2Mesh = new THREE.Mesh(leg2Geom,whiteMaterial);
+  leg2Mesh.position.set(2,-10,0);
+
+  astronaut3.add(leg1Mesh);
+  astronaut3.add(leg2Mesh);
+
+  // arms
+  var arm = new THREE.Object3D();
+
+  var shoulder1Geom = new THREE.SphereGeometry(2,32,32,Math.PI/2); //Math.PI*1.25
+  var shoulder1Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+  shoulder1Mesh.position.set(4.4,2.5,0.5);
+  shoulder1Mesh.rotation.z = Math.PI/4;
+  arm.add(shoulder1Mesh);
+
+  var shoulder2Geom = new THREE.SphereGeometry(1.8,32,32,Math.PI/2); //Math.PI*1.25
+  var shoulder2Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+  shoulder2Mesh.position.set(5,1.5,0.5);
+  shoulder2Mesh.rotation.z = Math.PI/4;
+  arm.add(shoulder2Mesh);
+
+  var shoulder3Geom = new THREE.SphereGeometry(1.8,32,32,Math.PI/2); //Math.PI*1.25
+  var shoulder3Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+  shoulder3Mesh.position.set(6,0,0.5);
+  shoulder3Mesh.rotation.z = Math.PI/4;
+  arm.add(shoulder3Mesh);
+
+  var shoulder4Geom = new THREE.SphereGeometry(1.8,32,32,Math.PI/2); //Math.PI*1.25
+  var shoulder4Mesh = new THREE.Mesh (shoulder1Geom,whiteMaterial); 
+  shoulder4Mesh.position.set(6,-2,0.5);
+  shoulder4Mesh.rotation.z = Math.PI/4;
+  arm.add(shoulder4Mesh);
+
+  let arm2 = arm.clone();
+  arm2.rotation.y = Math.PI; 
+  arm2.position.set(0,0,0.5); 
+
+  astronaut3.add(arm);
+  astronaut3.add(arm2);
+
+
+  astronaut3.position.set(45,10,-45);
+  astronaut3.rotation.y = Math.PI/10;
+  astronaut3.castShadow = true; 
+  scene.add(astronaut3);
+}
+
+// add a spotlight that can cast shadows
+
+var light = new THREE.SpotLight();
+light.intensity = 0.5;
+light.position.set(-20,20,0);
+light.castShadow = true;
+scene.add(light);
+
+// add another spotlight for the night mode
+
+var light2 = new THREE.SpotLight();
+light2.intensity = 0.3;
+light2.position.set(30,20,-20);
+light2.castShadow = true;
+
+// add an ambient light to the scene 
+
+var ambientLight = new THREE.AmbientLight(0xcfffff);
+ambientLight.intensity = 1;
+scene.add(ambientLight);
+
+
+TW.cameraSetup(renderer,
+                           scene,
+                           {minx: -10, maxx: 10,
+                            miny: -10, maxy: 10,
+                            minz: -10, maxz: 10}); 
+
+guiParams = {
+    mode: "day",
+}
+
+createAnimatedFlag();
+addRocks();
+createGround();
+makeAstro1();
+makeAstro2();
+makeAstro3();
+
+
+function redoScene() {
+
+    if (guiParams.mode == "day"){
+        scene.remove(light2);
+        scene.add(light);
+        //map picture of the surface of Mars to the background of the scene
+        scene.background = loader.load("mars-resized.png");
+         
+    }
+    if (guiParams.mode == "night"){
+        scene.remove(light);
+        scene.add(light2);
+        scene.background = loader.load("mars_night.png");
+        
+    }
+}
+
+var gui = new dat.GUI({width: 300});
+gui.add(guiParams,"mode",["day","night"]).onChange(redoScene);
+
+
+
+</script>
+</html>

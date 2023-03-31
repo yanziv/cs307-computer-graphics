@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+ 
+
+    <head>
+        <title>Return to Mars Final Project</title>
+        
+    </head>
+ 
+    <body>
+        <ul>
+        <h1>Return to Mars</h1>
+        <h2>CS 307 Computer Graphics Final Project </h2>
+        
+            <li>Created by Veronica Lin '24 (Spring 2022)</li>
+            <li>Special thanks to Prof. Ellen Hildreth for her help with the project!</li>
+                
+                <p> Inspired by the documentary <em>Return to Space</em>, I created a Mars scene to showcase the possibility of
+                    humans living a multiplanetary life in the future. Here is the <a href="./demo.html">demo.</a></p>
+                <p>Graphics concepts used in the scene:</p>
+                <li>Hierarchical Modeling
+                 <li>Material, Lighting, and Shading
+                <li>Anti-Aliasing 
+                <li>Curved Surfaces Through Using A Height Map
+                <li>Texture Mapping
+                <li>User Interaction and Animation</li>    
+
+        </ul>
+ 
+        <CENTER> 
+            
+
+        <p>The day scene on Mars: </p>
+        <p>
+            
+            <img src="day-scene.png" alt="Mars-scene" height="500">
+        </p>
+        <p>The night scene on Mars: </p>
+        <p>
+            <img src="night-scene.png" alt="Mars-scene" height="500">
+        </p>
+        <p>I added a GUI control to the top right corner of the page so that the user could switch between the day mode and the night mode.</p>
+        <img src="GUI.png" alt="Mars-scene" height="100">
+        
+        <h2>Background</h2>
+        
+      
+            <p>I texture mapped these two pictures to the background of the scenes.</p>
+            <section>
+                <div class="images">
+                    <img src="mars-resized.png" alt="background" height="300">
+                    <img src="mars_night.png" alt="background" height="300">
+                </div>
+            </section>
+       
+      
+        
+        <h2>Terrain + Rocks</h2>
+        <img src="background.png" alt="terrain" height="400">
+        <p>In order to create a terrain-like surface, I used a height map (the picture on the left) to create elevation variations. 
+            A height map is essentially a black and white image, and in any height map, the dark areas are the low areas and the white areas are the high areas. The height map below is loaded 
+            into the displacement map of the MeshPhongMaterial for the terrain. I then texture mapped the picture on the right to the terrain and chose baby blue as my material color so that it blends in better with the background.</p>
+        <section>
+            <div class="images">
+                <img src="heightMap2.png" alt="background" height="300">
+                <img src="mars-surface.png" alt="background" height="300">
+            </div>
+        </section>
+        
+
+        <p>For the rocks, I used ConvexGeometry which takes in a set of 3D points and generates a geometry that encloses 
+            the points. I used a random function to generate the points, so the rocks look different every time the page 
+        is refreshed. The location of each rock is also randomly assigned.</p>
+
+         <h2>Animated SpaceX Flag</h2>
+         <img src="flag.png" alt="flag" height="400">
+         <p>I used a CylinderGeometry and a PlaneGeometry to create the SpaceX Flag. The SpaceX logo is textured mapped.
+             In order to animate the flag, I wrote a function to map each vertex on the flag to a different point and I updated the position of the vertices once each vertex received a new coordinate assignment. I 
+             used a clock to help with the position update of the vertices on the flag geometry.
+
+         </p>
+
+         <h2>Lego Astronauts</h2>
+        <img src="astronaut.png" alt="astronaut" height="400">
+        <p>I mainly used SphereGeometry, CylinderGeometry, 
+            and BoxGeometry to create the astronaut figure. (Note that a CylinderGeometry is 
+            used to create the astronaut's trapezoid-shaped torso) Both the NASA logo and Lego's face are texture mapped.
+        </p>
+        <h2>Lighting</h2>
+        <p>I added an ambient light and a spotlight to the day scene, and the spotlight is used to cast shadows. In the night 
+            scene, the intensity of the spotlight is reduced to make the scene look darker. I positioned the spotlight to 
+            the far right side of the terrain so the position of the shadows shifts as 
+            the user switches from the day mode to the night mode. 
+        </p>
+        </CENTER>
+       
+    </body>
+</html>

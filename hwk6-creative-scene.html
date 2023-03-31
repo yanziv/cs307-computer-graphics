@@ -1,0 +1,188 @@
+<!doctype html>
+<html>
+<head>
+    <title>Creative Scene</title>
+    <style>canvas { width: 100%; height: 100% }</style>
+</head>
+<body>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+        "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+        </script>
+        <script src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js">
+        "https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls.js"
+        </script>
+        <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+        "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+        </script>
+        <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+        "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui.min.js"
+        </script>
+        
+            <script src="hwk6-creative-scene.html"></script>
+                        
+</body>
+    <h1>Return to Mars</h1>
+    <p>Inspired by the documentary "Return to Space," I've decided to create a scene to showcase commercialized space travels and the vision of
+        humans living a multiplanetary life in the future. The scene will include astronauts, rocks, and potentially a rocket/spaceship. 
+        I have made a waving flag which utilizes animation, and I will use Bezier curves in creating rocks and astronauts. I have added a picture to the 
+        background of the scene to showcase the surface environment of Mars. I might need a picture with higher resolution for my final product. I intend to make
+        one of the astronauts Elon Musk, so I will use texture mapping to map his face to the head of the astronaut object. I will also need to fix the camera
+        so that viewers can only see the front of the scene.</p>
+<script>
+
+var scene = new THREE.Scene(); 
+var renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true
+});
+
+TW.mainInit(renderer,scene);
+
+var sceneParams = {
+    //spaceX flag params 
+    flagWidth: 10,
+    flagHeight: 7,
+    flagWidthSegments: 15,
+    flagHeightSegments: 9,
+
+    //flag pole params
+    poleRadiusTop: 0.35,
+    poleRadiusBottom: 0.35,
+    poleHeight: 15,
+    poleRadialSegments: 32
+}
+
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+var loader = new THREE.TextureLoader(); 
+
+// create a SpaceX flag 
+var geometry = new THREE.PlaneGeometry(sceneParams.flagWidth, sceneParams.flagHeight, sceneParams.flagWidthSegments, sceneParams.flagHeightSegments);
+var material = new THREE.MeshBasicMaterial({ 
+    color: 0xffffff,
+    //map: loader.load("spaceX.jpeg")
+    map: loader.load("spacex.png"),
+    side: THREE.DoubleSide,
+    //wireframe: true
+});
+var flag = new THREE.Mesh(geometry, material);
+// flag.position.set(0,0,0);
+// scene.add(flag);
+
+flag.rotation.set(-0.1,0,0);
+
+
+// create a clock so that the flag moves with elapsed time 
+var clock = new THREE.Clock(); 
+function flagAnimate() {
+    var t = clock.getElapsedTime(); 
+
+    // move all the vertices on the flag and change the amplitude of the wave
+    flag.geometry.vertices.map(v =>  {
+        var waveX1 = 0.5 * Math.sin(v.x * 2 + t * 10);
+        var waveX2 = 0.25 * Math.sin(v.x * 10 + t  * 5);
+        var waveY1 = 0.5 * Math.sin(v.y * 15 + t * 2);
+        var multiplier = (v.x + sceneParams.flagWidth/2) / sceneParams.flagWidth;
+        v.z = (waveX1 + waveX2 + waveY1) * multiplier; 
+    })
+    flag.geometry.verticesNeedUpdate = true; 
+	requestAnimationFrame(flagAnimate);
+    TW.render();
+	
+}
+flagAnimate();
+
+// create a flag pole 
+ var poleGeom = new THREE.CylinderGeometry(sceneParams.poleRadiusTop,sceneParams.poleRadiusBottom,sceneParams.poleHeight,sceneParams.poleRadialSegments,true);
+ var poleMaterial = new THREE.MeshPhongMaterial({color: new THREE.Color("silver"),
+                                                    specular: new THREE.Color("gray"),
+                                                    shininess: 10,
+                                                    flatShading: THREE.FlatShading,
+                                                    side: THREE.DoubleSide});
+ var poleMesh = new THREE.Mesh(poleGeom, poleMaterial);
+ poleMesh.position.x = -5;
+ poleMesh.position.y = -4;
+ var entireFlag = new THREE.Object3D(); 
+ entireFlag.add(poleMesh); 
+ entireFlag.add(flag);
+ scene.add(entireFlag);
+
+
+ // create the surface of Mars
+//  var controlPoints = [ [ [0,0,0],  [2,-1,0], [4,-1,0], [6, 0, 0] ],
+//                       [ [-1,1,0], [2,1,1],  [4,1,1],  [7, 1, 0] ],
+//                       [ [-1,2,0], [2,2,1],  [4,2,1],  [7, 2, 0] ],
+//                       [ [0,3,0],  [2,4,1],  [4,4,1],  [6, 3, 0] ] ];
+
+// var topToBottom = [
+//     [ [0,3,0],  [2,4,1],  [4,4,1],  [6, 3, 0] ],
+//     [ [-1,2,0], [2,2,1],  [4,2,1],  [7, 2, 0] ],
+//     [ [-1,1,0], [2,1,1],  [4,1,1],  [7, 1, 0] ],
+//     [ [0,0,0],  [2,-1,0], [4,-1,0], [6, 0, 0] ],
+// ];
+
+// var surfGeom = new THREE.BezierSurfaceGeometry(topToBottom.reverse(), 100, 100);
+
+// var surfMat  = new THREE.MeshBasicMaterial( { color: THREE.ColorKeywords.blue,
+//                                               wireframe: true,
+//                                               linewidth: 2 } );
+
+// var surfMat = new THREE.MeshBasicMaterial({color: 0x59260b, side: THREE.DoubleSide}); //seal brown for dirt
+// var surf = new THREE.Mesh(surfGeom, surfMat);
+// surf.position.y = -10;
+// surf.rotation.x = -Math.PI/2; 
+// scene.add(surf);
+
+// function showCP(cpList) {
+//     for( var j=0; j < cpList.length; j++ ) {
+//         var subList = cpList[j];                      
+//         for( var i=0; i < subList.length; i++ ) {
+//             scene.add(TW.createPoint(subList[i]));
+//         }
+//     }
+// };
+
+// showCP(controlPoints);          // optional, for debugging.
+//TW.viewFromFront();   
+
+
+
+
+
+
+
+
+
+
+
+
+
+// adding lights to the scene
+var light = new THREE.DirectionalLight(0xffffff, 0.5);
+light.position.set(16, 16, 8);
+light.castShadow = true;
+// light.shadow.mapSize.width = 512 * 12;
+// light.shadow.mapSize.height = 512 * 12;
+// light.shadow.camera.top = 40;
+// light.shadow.camera.bottom = -40;
+// light.shadow.camera.left = -40;
+// light.shadow.camera.right = 40;
+scene.add(light);
+var ambientLight = new THREE.AmbientLight(0xcfffff);
+ambientLight.intensity = 1;
+scene.add(ambientLight);
+
+scene.background = loader.load("mars.jpeg"); //map picture of the surface of Mars to the background of the scene
+
+
+TW.cameraSetup(renderer,
+                           scene,
+                           {minx: -10, maxx: 10,
+                            miny: -10, maxy: 10,
+                            minz: -10, maxz: 10});
+
+
+
+</script>
+</html>

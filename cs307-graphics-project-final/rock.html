@@ -1,0 +1,85 @@
+<!doctype html>
+<!-- 
+Ellen C. Hildreth
+Creates a convex geometry that looks like a boulder
+ -->
+
+<html>
+  <head>
+    <title>Rock</title>
+    <style>      
+      canvas {
+          display: block;
+          margin: 10px auto;
+          width: 800px;
+          height: 500px;
+      }
+    </style>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+      </script>
+      <script src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls.js"
+      </script>
+      <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+      </script>
+      <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui.min.js"
+      </script>
+      <script src="https://cs.wellesley.edu/~cs307/threejs/demos-s21-r95/LatheEtc/ConvexGeometry.js"></script>
+    </head>
+<body>
+
+<script>
+  
+// create scene, renderer, and camera
+
+var scene = new THREE.Scene(); 
+var renderer = new THREE.WebGLRenderer();
+TW.mainInit(renderer,scene);
+
+TW.cameraSetup(renderer, scene,
+               {minx: -5, maxx: 5,
+                miny: -5, maxy: 5,
+                minz: -5, maxz: 5});
+
+// returns an array of 100 randomly positioned points within a 10x10x10 cube
+
+function makePoints () {
+    pts = [];
+    for (var i = 0; i < 100; i++) {
+        x = 10*Math.random()-5;
+        y = 10*Math.random()-5;
+        z = 10*Math.random()-5;
+        pts.push(new THREE.Vector3(x,y,z));
+    }
+    return pts;
+}
+
+var points = makePoints();
+
+// create a geometry that is the convex hull surrounding the 3D points
+
+var rockGeom = new THREE.ConvexGeometry(points);
+var rockMat = new THREE.MeshPhongMaterial({color: 0x505050,
+                                           flatShading: true});
+var rockMesh  = new THREE.Mesh(rockGeom, rockMat);
+scene.add(rockMesh);
+
+// add lighting to the scene
+
+var ambLight = new THREE.AmbientLight(0xffffff, 0.8);
+scene.add(ambLight);
+
+var light = new THREE.PointLight(0xffffff, 1.0);
+light.position.set(10,10,10);
+scene.add(light);
+
+// render the scene
+
+TW.render();
+
+</script>
+</body>
+</html>

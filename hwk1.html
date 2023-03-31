@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Template Three.js app</title>
+<style>
+      /* feel free to style the canvas any way you want. If you want it to
+      use the entire window, set width: 100% and height: 100%. */
+      
+      canvas {
+          display: block;
+          margin: 10px auto;
+          width: 80%;
+          height: 500px;
+      }
+    </style>
+<script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+"https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+</script>
+<!-- omit dat.gui and OrbitControls if you don't need them -->
+<script src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js">
+"https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r80.js"
+</script>
+<script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+"https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r80.min.js"
+</script>
+<script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+"https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+</script>
+</head>
+<body>
+<h1>Veronica's Obelisk</h1>
+
+
+<script>
+
+// ====================================================================
+function monuGeometry (baseWidth,towerHeight,pyWidth,pyHeight) {
+   var monuGeom = new THREE.Geometry();
+
+   // construct the vertices for the base of the tower
+   monuGeom.vertices.push(new THREE.Vector3(0.5*baseWidth,0,0.5*baseWidth));
+   monuGeom.vertices.push(new THREE.Vector3(0.5*baseWidth,0,-0.5*baseWidth));
+   monuGeom.vertices.push(new THREE.Vector3(-0.5*baseWidth,0,-0.5*baseWidth));
+   monuGeom.vertices.push(new THREE.Vector3(-0.5*baseWidth,0,0.5*baseWidth));
+
+   // construct the vertices for the pyramidion 
+   monuGeom.vertices.push(new THREE.Vector3(0.5*pyWidth,towerHeight,0.5*pyWidth));
+   monuGeom.vertices.push(new THREE.Vector3(0.5*pyWidth,towerHeight,-0.5*pyWidth));
+   monuGeom.vertices.push(new THREE.Vector3(-0.5*pyWidth,towerHeight,-0.5*pyWidth));
+   monuGeom.vertices.push(new THREE.Vector3(-0.5*pyWidth,towerHeight,0.5*pyWidth));
+   // peak
+   monuGeom.vertices.push(new THREE.Vector3(0,towerHeight+pyHeight,0));
+
+   // construct the 12 faces
+   monuGeom.faces.push(new THREE.Face3(0,1,4));
+   monuGeom.faces.push(new THREE.Face3(1,5,4));
+   monuGeom.faces.push(new THREE.Face3(1,2,6));
+   monuGeom.faces.push(new THREE.Face3(1,6,5));
+   monuGeom.faces.push(new THREE.Face3(2,3,7));
+   monuGeom.faces.push(new THREE.Face3(2,7,6));
+   monuGeom.faces.push(new THREE.Face3(3,0,4));
+   monuGeom.faces.push(new THREE.Face3(3,4,7));
+   // four faces for the pyramidion
+   monuGeom.faces.push(new THREE.Face3(4,5,8));
+   monuGeom.faces.push(new THREE.Face3(5,6,8));
+   monuGeom.faces.push(new THREE.Face3(6,7,8));
+   monuGeom.faces.push(new THREE.Face3(7,4,8));
+   
+
+   return monuGeom;
+}
+
+// create a Scene object
+var scene = new THREE.Scene();
+
+
+var colorMaterials = [new THREE.MeshBasicMaterial({color: new THREE.Color("rgb(255,0,255)")}),  //magenta
+                      new THREE.MeshBasicMaterial({color: new THREE.Color("rgb(255,0,255)")}), //magenta
+                      new THREE.MeshBasicMaterial({color: new THREE.Color("purple")}), //purple
+                      new THREE.MeshBasicMaterial({color: new THREE.Color("purple")}), //purple
+                      new THREE.MeshBasicMaterial({color: new THREE.Color(THREE.ColorKeywords.gray)}), //gray
+                      new THREE.MeshBasicMaterial({color: new THREE.Color(THREE.ColorKeywords.gray)}), //gray
+                      new THREE.MeshBasicMaterial({color: new THREE.Color(1,0,0)}), //red
+                      new THREE.MeshBasicMaterial({color: new THREE.Color(1,0,0)}), //red
+                      new THREE.MeshBasicMaterial({color: new THREE.Color(0xFFA07A)}),  //lightsalmon
+                      new THREE.MeshBasicMaterial({color: new THREE.Color(0xF5F5F5)}),  //whitesmoke                      
+                      new THREE.MeshBasicMaterial({color: new THREE.Color(0,1,0)}),  //green
+                      new THREE.MeshBasicMaterial({color: new THREE.Color("rgb(0,255,255)")})]; //cyan
+
+// ===============================================================
+//var baseWidth = 55;
+//var towerHeight = 500;
+//var pyWidth = 34;
+//var pyHeight = 55;
+
+var sceneParams = {baseWidth:55, towerHeight:500, pyWidth:34, pyHeight:55};
+
+function addMonument(bWidth, tHeight, pWidth, pHeight){
+  var monuGeom = monuGeometry(bWidth, tHeight, pWidth, pHeight); 
+  TW.setMaterialForFaces11(monuGeom);
+  monuMesh = new THREE.Mesh(monuGeom, colorMaterials);
+  monuMesh.position.set(0,0,0);
+  scene.add(monuMesh);
+}
+
+addMonument(55,500,34,55);
+
+function redrawMonument(){
+  scene.remove(monuMesh);
+  addMonument(sceneParams.baseWidth,sceneParams.towerHeight,sceneParams.pyWidth,sceneParams.pyHeight);
+  TW.render();
+}
+
+var gui = new dat.GUI();
+
+gui.add(sceneParams,'baseWidth', 30, 60).onChange(redrawMonument);
+gui.add(sceneParams,'towerHeight', 480, 520).onChange(redrawMonument);
+gui.add(sceneParams,'pyWidth', 20, 50).onChange(redrawMonument);
+gui.add(sceneParams,'pyHeight', 40, 60).onChange(redrawMonument);
+
+// ================================================================
+
+var renderer = new THREE.WebGLRenderer();
+TW.mainInit(renderer,scene);
+
+/* We always need a camera; here we'll use a default orbiting camera.  The
+third argument are the ranges for the coordinates, to help with setting up
+the placement of the camera. They need not be perfectly accurate, but if
+they are way off, your camera might not see anything, and you'll get a
+blank canvas. */
+
+TW.cameraSetup(renderer,
+               scene,
+               {minx: -30, maxx: 30,
+                miny: 0, maxy: 580,
+                minz: -30, maxz: 30});
+                
+  
+// ================================================================
+
+
+
+</script>
+</p></body>
+</html>

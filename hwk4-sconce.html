@@ -1,0 +1,167 @@
+
+<!doctype html>
+<html>
+<head>
+    <title>Sconce</title>
+    <style>canvas { width: 100%; height: 100% }</style>
+</head>
+<body>
+<script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+"https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+</script>
+<script src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js">
+"https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls.js"
+</script>
+<script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+"https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+</script>
+<script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+"https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui.min.js"
+</script>
+
+    <script src="hwk4.js"></script>
+                        
+</body>
+<script>
+
+var scene = new THREE.Scene(); 
+
+var renderer = new THREE.WebGLRenderer();
+
+TW.mainInit(renderer,scene);
+
+// create a box that will be turned into a room
+
+var roomGeom = new THREE.BoxGeometry(100,100,100);
+
+// create an array of 6 Lambert materials from an array of colors for the inner 
+// faces of the box
+var materialArray = [];
+// colors for [right wall, left wall, ceiling, floor, front wall, back wall]
+var faceColors = [0x2EA8D0, 0x2EA8D0, 0x2E7D34, 0xE3C868, 0x2EA8D0, 0x2EA8D0];
+for(var i = 0; i < 6; i++) {
+    materialArray.push(new THREE.MeshPhongMaterial({
+                                 color: faceColors[i],
+                                 side: THREE.BackSide}));
+}
+
+// create mesh from room geometry and materials, and add mesh to the scene
+var roomMesh = new THREE.Mesh(roomGeom, materialArray);
+scene.add(roomMesh);
+
+
+// create a ball 
+// parameters for pink ball and spotlight
+var sceneParams = { ballColor : 0x7E55AD,
+                    ballSpecular: 0x343434,
+                    ballShininess: 36,
+
+                    conePositionX: -35,
+                    conePositionY: 10,
+                    conePositionZ: -46,
+
+                    spotlightColor: 0x808080,
+                    ambLightColor: 0x808080,
+                    directionalColor: 0x808080,
+
+                    AmbientLight: true,    // control visibility of the ambient light
+                    DirectionalLight: true, // control visibility of the directional light
+                    Spotlight: true // control visibility of the spotlight
+                  };
+
+//create the ball
+var ballGeom = new THREE.SphereGeometry(10,30,30);
+var ballMat = new THREE.MeshPhongMaterial( {color: sceneParams.ballColor,
+                                            specular: sceneParams.ballSpecular,
+                                            shininess: sceneParams.ballShininess} );
+var ballMesh = new THREE.Mesh(ballGeom, ballMat);
+ballMesh.position.set(-35,-40,-40);
+scene.add(ballMesh);
+
+//create a sconce
+//create two silver scones 
+var silverMaterial = new THREE.MeshPhongMaterial({color: new THREE.Color("gray"),
+                                                    specular: new THREE.Color("gray"),
+                                                    shininess: 10,
+                                                    flatShading: THREE.FlatShading,
+                                                    side: THREE.DoubleSide});
+
+
+var coneObj = new THREE.Object3D();
+var coneMesh1 = new THREE.Mesh(new THREE.ConeGeometry(4,8,30,1,true), silverMaterial);
+coneMesh1.position.set(sceneParams.conePositionX,sceneParams.conePositionY,sceneParams.conePositionZ);
+coneObj.add(coneMesh1);
+
+var coneMesh2 = new THREE.Mesh(new THREE.ConeGeometry(4,8,30,1,true), silverMaterial);
+coneMesh2.position.set(sceneParams.conePositionX,sceneParams.conePositionY + 8,sceneParams.conePositionZ);
+coneMesh2.rotation.set(0,0,Math.PI);
+coneObj.add(coneMesh2);
+scene.add(coneObj);
+
+//create lights for the room and the sconce 
+    
+//create an ambient light 
+var ambLight = new THREE.AmbientLight(sceneParams.ambLightColor); // soft white light 
+scene.add(ambLight);
+
+//create a directional light 
+var directionalLight = new THREE.DirectionalLight(sceneParams.directionalColor,1.5);
+directionalLight.target = ballMesh; 
+scene.add(directionalLight);
+
+//create two spotlights
+var spotAngle = Math.atan(0.5);   // true angle for cone with radius 4, height 8
+var bulb1 = new THREE.SpotLight(new THREE.Color("white"), 1.5, 0, spotAngle);
+bulb1.position.set(-34, 11, -42);
+var bulbTarget1 = new THREE.Object3D();
+// target positioned on ground, at distance of "dist" from origin of lamp
+bulbTarget1.position.set(-35,30,-46);
+bulb1.target = bulbTarget1;
+scene.add(bulb1);
+scene.add(bulb1.target);
+
+var bulb2 = new THREE.SpotLight(new THREE.Color("white"), 1.5, 0, spotAngle);
+bulb2.position.set(-36, 16, -46);
+var bulbTarget2 = new THREE.Object3D();
+// target positioned on ground, at distance of "dist" from origin of lamp
+bulbTarget2.position.set(-35,-10,-46);
+bulb2.target = bulbTarget2;
+scene.add(bulb2);
+scene.add(bulb2.target);
+
+var state = TW.cameraSetup(renderer,
+                           scene,
+                           {minx: -50, maxx: 50,
+                            miny: -50, maxy: 50,
+                            minz: -50, maxz: 50});
+
+
+// function to control visibility of the ambient light
+function showAmbientLight () {
+    ambLight.visible = sceneParams.AmbientLight;
+    TW.render();
+}
+
+// function to control visibility of the directional light
+function showDirectionalLight () {
+    directionalLight.visible = sceneParams.DirectionalLight;
+    TW.render();
+}
+
+//function to control visibility of the spotlight 
+function showSpotlight () {
+    bulb1.visible = sceneParams.Spotlight;
+    bulb2.visible = sceneParams.Spotlight;
+    TW.render();
+}
+
+// add a GUI control of the lights 
+var gui = new dat.GUI();
+gui.add(sceneParams, 'AmbientLight').onChange(showAmbientLight);
+gui.add(sceneParams, 'DirectionalLight').onChange(showDirectionalLight);
+gui.add(sceneParams, 'Spotlight').onChange(showSpotlight);
+
+
+</script>
+</html>
+

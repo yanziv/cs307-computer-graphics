@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Ellen's obelisk</title>
+    <style>
+      /* style the canvas */
+      canvas {
+          display: block;
+          margin: 10px auto;
+          width: 80%;
+          height: 500px;
+      }
+    </style>
+    <script src="https://cs.wellesley.edu/~cs307/threejs/libs/three-r95.all.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/three-r80.min.js"
+      </script>
+      <script src="https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/OrbitControls.js"
+      </script>
+      <script src="https://cs.wellesley.edu/~cs307/threejs/libs/tw-sp21.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/tw-fa18.js"
+      </script>
+      <script src="https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui-r95.js">
+      "https://cs.wellesley.edu/~cs307/threejs/libs/dat.gui.min.js"
+      </script>
+      
+  </head>
+<body>
+
+<h1>Ellen's Obelisk</h1>
+
+<script>
+// create Scene object
+var scene = new THREE.Scene();
+
+// store obelisk parameters in an object, to enable GUI control
+var params = {
+     baseWidth: 55,       // width at base of monument
+     topWidth: 34,        // width at base of pyramidion at the top
+     mainHeight: 500,     // height of main part of monument
+     topHeight: 55,       // height of pyramidion at the top
+     showObelisk: true    // control visibility of obelisk
+}
+
+var obeliskGeometry, obeliskMesh;
+
+// function to create obelisk Geometry with the specified dimensions
+function createObeliskGeometry (baseWidth, topWidth, mainHeight, topHeight) {
+    // abbreviations, for convenience
+    var bw = baseWidth/2, tw = topWidth/2, mh = mainHeight, th = topHeight;
+
+    // create an initial Geometry object
+    var obGeom = new THREE.Geometry();
+
+    // add base vertices
+    obGeom.vertices.push(new THREE.Vector3(-bw,0,-bw)); // 0
+    obGeom.vertices.push(new THREE.Vector3(-bw,0,+bw)); // 1
+    obGeom.vertices.push(new THREE.Vector3(+bw,0,+bw)); // 2
+    obGeom.vertices.push(new THREE.Vector3(+bw,0,-bw)); // 3
+
+    // add top vertices
+    obGeom.vertices.push(new THREE.Vector3(-tw,mh,-tw)); // 4
+    obGeom.vertices.push(new THREE.Vector3(-tw,mh,+tw)); // 5
+    obGeom.vertices.push(new THREE.Vector3(+tw,mh,+tw)); // 6
+    obGeom.vertices.push(new THREE.Vector3(+tw,mh,-tw)); // 7
+
+    // add peak vertex
+    obGeom.vertices.push(new THREE.Vector3(0,mh+th,0)); // 8
+
+    // add faces for main part, with each quad defined by two triangles
+    obGeom.faces.push(new THREE.Face3(1,2,6));
+    obGeom.faces.push(new THREE.Face3(1,6,5));
+    obGeom.faces.push(new THREE.Face3(2,3,7));
+    obGeom.faces.push(new THREE.Face3(2,7,6));
+    obGeom.faces.push(new THREE.Face3(3,0,4));
+    obGeom.faces.push(new THREE.Face3(3,4,7));
+    obGeom.faces.push(new THREE.Face3(0,5,4));
+    obGeom.faces.push(new THREE.Face3(0,1,5));
+
+    // add faces for pyramidion that has four triangles
+    obGeom.faces.push(new THREE.Face3(5,6,8));
+    obGeom.faces.push(new THREE.Face3(6,7,8));
+    obGeom.faces.push(new THREE.Face3(7,4,8));
+    obGeom.faces.push(new THREE.Face3(4,5,8));
+
+    // return the constructed Geometry object
+    return obGeom;
+}
+
+// function to create Mesh for obelisk with 8 different face colors
+function createObeliskMesh (geom) {
+  // create an array of 8 distinct colors, using different ways
+  // of specifying the colors
+  var colors = [ new THREE.Color(THREE.ColorKeywords.sienna),
+                 new THREE.Color(0.39, 0.58, 0.93),   // cornflower
+                 new THREE.Color("blue"),
+                 new THREE.Color(0xffdab9),           // peach
+                 new THREE.Color("rgb(255,215,0)"),   // gold
+                 new THREE.Color(TW.SILVER),
+                 new THREE.Color(THREE.ColorKeywords.fuschia),
+                 TW.randomColor() ];
+  // create an array of 8 materials from these colors
+  var materials = [];
+  for (var i = 0; i < 8; i++) {
+       materials.push(new THREE.MeshBasicMaterial({color: colors[i]}));
+  }
+  
+  // set the material index for each of the 12 faces in the Geometry
+  TW.setMaterialForFaces(geom, 0, 0, 1);
+  TW.setMaterialForFaces(geom, 1, 2, 3);
+  TW.setMaterialForFaces(geom, 2, 4, 5);
+  TW.setMaterialForFaces(geom, 3, 6, 7);
+  TW.setMaterialForFaces(geom, 4, 8);
+  TW.setMaterialForFaces(geom, 5, 9);
+  TW.setMaterialForFaces(geom, 6, 10);
+  TW.setMaterialForFaces(geom, 7, 11);
+
+  // create and return a Mesh using the Geometry and Material
+  return new THREE.Mesh(geom, materials);
+}
+
+// function to construct obelisk Geometry and Mesh, and add to the scene
+function addObelisk (baseWidth, topWidth, mainHeight, topHeight) {
+    obeliskGeometry = createObeliskGeometry(baseWidth, topWidth, mainHeight, topHeight);
+    obeliskMesh = createObeliskMesh(obeliskGeometry);
+    scene.add(obeliskMesh);
+}
+
+// add initial obelisk to the scene
+addObelisk(params.baseWidth, params.topWidth, params.mainHeight, params.topHeight);
+
+// construct a renderer for the scene
+var renderer = new THREE.WebGLRenderer();
+
+// initialize TW
+TW.mainInit(renderer, scene);
+
+// set up a camera for the scene
+TW.cameraSetup(renderer, scene,
+               {minx: -params.baseWidth, maxx: params.baseWidth,
+                miny: 0, maxy: params.mainHeight + params.topHeight + 100,
+                minz: -params.baseWidth, maxz: params.baseWidth}
+              );
+
+// function to redraw obelisk when the user changes a parameter
+function redrawObelisk () {
+    scene.remove(obeliskMesh);
+    addObelisk(params.baseWidth, params.topWidth, params.mainHeight, params.topHeight);
+    TW.render();
+}
+
+// function to control visibility of obelisk
+function showOb () {
+  obeliskMesh.visible = params.showObelisk;
+  TW.render();
+}
+
+// add a GUI control for each parameter of the obelisk
+var gui = new dat.GUI();
+gui.add(params, 'baseWidth', 35, 75).onChange(redrawObelisk);
+gui.add(params, 'topWidth', 10, 48).onChange(redrawObelisk);
+gui.add(params, 'mainHeight', 400, 600).onChange(redrawObelisk);
+gui.add(params, 'topHeight', 35, 75).onChange(redrawObelisk);
+gui.add(params, 'showObelisk').onChange(showOb);
+
+</script>
+
+</body>
+</html>
